@@ -35,7 +35,7 @@ export async function updateTask(id, data) {
     }
   );
 
-  return response.data;
+  return response.data.task;
 }
 
 export async function deleteTask(id) {
