@@ -7,6 +7,7 @@ import {
 
 import {
   getCurrentUser,
+  getCsrfToken,
   logout as logoutRequest,
 } from "../services/authService";
 
@@ -17,16 +18,20 @@ export function AuthProvider({ children }) {
   const [authLoading, setAuthLoading] = useState(true);
 
   async function checkAuth() {
-    try {
-      const currentUser = await getCurrentUser();
+  try {
+    // Fetch and store a fresh CSRF token whenever
+    // the application initializes.
+    await getCsrfToken();
 
-      setUser(currentUser);
-    } catch {
-      setUser(null);
-    } finally {
-      setAuthLoading(false);
-    }
+    const currentUser = await getCurrentUser();
+
+    setUser(currentUser);
+  } catch {
+    setUser(null);
+  } finally {
+    setAuthLoading(false);
   }
+}
 
   useEffect(() => {
     checkAuth();
