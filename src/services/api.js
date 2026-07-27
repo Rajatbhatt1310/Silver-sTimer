@@ -1,8 +1,21 @@
 import axios from "axios";
 
 
+// ============================================================
+// API BASE URL
+// ============================================================
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:8000/api/v1";
+
+
+// ============================================================
+// AXIOS INSTANCE
+// ============================================================
+
 const api = axios.create({
-  baseURL: "http://localhost:8000/api/v1",
+  baseURL: API_BASE_URL,
 
   withCredentials: true,
 
@@ -12,9 +25,9 @@ const api = axios.create({
 });
 
 
-// ---------------------------------------------
-// Read a cookie by name
-// ---------------------------------------------
+// ============================================================
+// READ COOKIE
+// ============================================================
 
 function getCookie(name) {
   const cookies =
@@ -23,8 +36,7 @@ function getCookie(name) {
       : [];
 
   for (const cookie of cookies) {
-    const trimmed =
-      cookie.trim();
+    const trimmed = cookie.trim();
 
     if (
       trimmed.startsWith(
@@ -43,13 +55,12 @@ function getCookie(name) {
 }
 
 
-// ---------------------------------------------
-// Attach Django CSRF token automatically
-// ---------------------------------------------
+// ============================================================
+// ATTACH DJANGO CSRF TOKEN
+// ============================================================
 
 api.interceptors.request.use(
   (config) => {
-
     const method =
       config.method?.toLowerCase();
 
@@ -60,13 +71,11 @@ api.interceptors.request.use(
       "delete",
     ];
 
-
     if (
       unsafeMethods.includes(method)
     ) {
       const csrfToken =
         getCookie("csrftoken");
-
 
       if (csrfToken) {
         config.headers[
@@ -74,7 +83,6 @@ api.interceptors.request.use(
         ] = csrfToken;
       }
     }
-
 
     return config;
   },
