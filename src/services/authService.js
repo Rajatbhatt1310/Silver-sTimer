@@ -1,14 +1,30 @@
-import api from "./api";
+import api, { setCsrfToken } from "./api";
 
+
+// ============================================================
+// CSRF
+// ============================================================
 
 export async function getCsrfToken() {
   const response = await api.get(
     "/auth/csrf/"
   );
 
-  return response.data.csrfToken;
+  const token =
+    response.data.csrfToken;
+
+  // Store token globally in our Axios API layer
+  // so other services (focus, planner, settings, etc.)
+  // can use it automatically.
+  setCsrfToken(token);
+
+  return token;
 }
 
+
+// ============================================================
+// SIGNUP
+// ============================================================
 
 export async function signup(data) {
   const csrfToken =
@@ -28,6 +44,10 @@ export async function signup(data) {
 }
 
 
+// ============================================================
+// LOGIN
+// ============================================================
+
 export async function login(data) {
   const csrfToken =
     await getCsrfToken();
@@ -45,6 +65,10 @@ export async function login(data) {
   return response.data;
 }
 
+
+// ============================================================
+// LOGOUT
+// ============================================================
 
 export async function logout() {
   const csrfToken =
@@ -64,6 +88,10 @@ export async function logout() {
 }
 
 
+// ============================================================
+// CURRENT USER
+// ============================================================
+
 export async function getCurrentUser() {
   const response = await api.get(
     "/auth/me/"
@@ -71,6 +99,11 @@ export async function getCurrentUser() {
 
   return response.data;
 }
+
+
+// ============================================================
+// DELETE ACCOUNT
+// ============================================================
 
 export async function deleteAccount() {
   const csrfToken =
@@ -87,6 +120,11 @@ export async function deleteAccount() {
 
   return response.data;
 }
+
+
+// ============================================================
+// CHANGE PASSWORD
+// ============================================================
 
 export async function changePassword(data) {
   const csrfToken =

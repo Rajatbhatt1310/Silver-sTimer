@@ -11,6 +11,17 @@ const API_BASE_URL =
 
 
 // ============================================================
+// CSRF TOKEN STORAGE
+// ============================================================
+
+let csrfToken = null;
+
+export function setCsrfToken(token) {
+  csrfToken = token;
+}
+
+
+// ============================================================
 // AXIOS INSTANCE
 // ============================================================
 
@@ -26,37 +37,7 @@ const api = axios.create({
 
 
 // ============================================================
-// READ COOKIE
-// ============================================================
-
-function getCookie(name) {
-  const cookies =
-    document.cookie
-      ? document.cookie.split(";")
-      : [];
-
-  for (const cookie of cookies) {
-    const trimmed = cookie.trim();
-
-    if (
-      trimmed.startsWith(
-        `${name}=`
-      )
-    ) {
-      return decodeURIComponent(
-        trimmed.substring(
-          name.length + 1
-        )
-      );
-    }
-  }
-
-  return null;
-}
-
-
-// ============================================================
-// ATTACH DJANGO CSRF TOKEN
+// ATTACH CSRF TOKEN
 // ============================================================
 
 api.interceptors.request.use(
@@ -72,16 +53,11 @@ api.interceptors.request.use(
     ];
 
     if (
-      unsafeMethods.includes(method)
+      unsafeMethods.includes(method) &&
+      csrfToken
     ) {
-      const csrfToken =
-        getCookie("csrftoken");
-
-      if (csrfToken) {
-        config.headers[
-          "X-CSRFToken"
-        ] = csrfToken;
-      }
+      config.headers["X-CSRFToken"] =
+        csrfToken;
     }
 
     return config;
