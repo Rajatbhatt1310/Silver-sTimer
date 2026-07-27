@@ -1,5 +1,6 @@
 import json
 from json import JSONDecodeError
+
 from django.utils.dateparse import parse_date
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
@@ -7,6 +8,10 @@ from django.shortcuts import get_object_or_404
 
 from .models import Task
 
+
+# ============================================================
+# SERIALIZE TASK
+# ============================================================
 
 def serialize_task(task):
     return {
@@ -28,9 +33,17 @@ def serialize_task(task):
     }
 
 
+# ============================================================
+# TASK LIST / CREATE
+# ============================================================
+
 @login_required
 def task_list_create(request):
+
+    # --------------------------------------------------------
     # GET /api/v1/planner/tasks/
+    # --------------------------------------------------------
+
     if request.method == "GET":
         tasks = Task.objects.filter(
             user=request.user
@@ -40,7 +53,9 @@ def task_list_create(request):
         date = request.GET.get("date")
 
         if date:
-            tasks = tasks.filter(date=date)
+            tasks = tasks.filter(
+                date=date
+            )
 
         return JsonResponse({
             "tasks": [
@@ -49,59 +64,92 @@ def task_list_create(request):
             ]
         })
 
+    # --------------------------------------------------------
     # POST /api/v1/planner/tasks/
+    # --------------------------------------------------------
+
     if request.method == "POST":
         try:
-            data = json.loads(request.body)
+            data = json.loads(
+                request.body
+            )
         except JSONDecodeError:
             return JsonResponse(
-                {"error": "Invalid JSON."},
+                {
+                    "error":
+                        "Invalid JSON."
+                },
                 status=400,
             )
 
-        title = data.get("title", "").strip()
+        title = data.get(
+            "title",
+            ""
+        ).strip()
+
         description = data.get(
             "description",
             ""
         ).strip()
 
-        date_string = data.get("date")
+        date_string = data.get(
+            "date"
+        )
 
         date = (
-                parse_date(date_string)
-                if date_string
-                else None
-            )
-        start_time = data.get("start_time")
-        duration = data.get("duration")
+            parse_date(date_string)
+            if date_string
+            else None
+        )
+
+        start_time = data.get(
+            "start_time"
+        )
+
+        duration = data.get(
+            "duration"
+        )
+
         priority = data.get(
             "priority",
             "medium"
         )
+
         category = data.get(
             "category",
             ""
         ).strip()
 
+        # ----------------------------------------------------
+        # VALIDATION
+        # ----------------------------------------------------
+
         if not title:
             return JsonResponse(
-                {"error": "Title is required."},
+                {
+                    "error":
+                        "Title is required."
+                },
                 status=400,
             )
 
         if not date_string:
             return JsonResponse(
-                {"error": "Date is required."},
+                {
+                    "error":
+                        "Date is required."
+                },
                 status=400,
-                 )
+            )
 
         if not date:
             return JsonResponse(
-            {"error":
-            "Invalid date. Use YYYY-MM-DD."
-            },
+                {
+                    "error":
+                        "Invalid date. Use YYYY-MM-DD."
+                },
                 status=400,
-             )
+            )
 
         if priority not in [
             "low",
@@ -109,16 +157,25 @@ def task_list_create(request):
             "high",
         ]:
             return JsonResponse(
-                {"error": "Invalid priority."},
+                {
+                    "error":
+                        "Invalid priority."
+                },
                 status=400,
             )
+
+        # ----------------------------------------------------
+        # CREATE TASK
+        # ----------------------------------------------------
 
         task = Task.objects.create(
             user=request.user,
             title=title,
             description=description,
             date=date,
-            start_time=start_time or None,
+            start_time=(
+                start_time or None
+            ),
             duration=duration,
             priority=priority,
             category=category,
@@ -126,21 +183,31 @@ def task_list_create(request):
 
         return JsonResponse(
             {
-                "message": "Task created successfully.",
-                "task": serialize_task(task),
+                "message":
+                    "Task created successfully.",
+
+                "task":
+                    serialize_task(task),
             },
             status=201,
         )
 
     return JsonResponse(
-        {"error": "Method not allowed."},
+        {
+            "error":
+                "Method not allowed."
+        },
         status=405,
     )
 
 
+# ============================================================
+# TASK DETAIL / UPDATE / DELETE
+# ============================================================
+
 @login_required
 def task_detail(request, task_id):
-    # Important:
+
     # Users can only access their own tasks.
     task = get_object_or_404(
         Task,
@@ -148,60 +215,98 @@ def task_detail(request, task_id):
         user=request.user,
     )
 
+    # --------------------------------------------------------
     # PATCH /api/v1/planner/tasks/<id>/
+    # --------------------------------------------------------
+
     if request.method == "PATCH":
         try:
-            data = json.loads(request.body)
+            data = json.loads(
+                request.body
+            )
         except JSONDecodeError:
             return JsonResponse(
-                {"error": "Invalid JSON."},
+                {
+                    "error":
+                        "Invalid JSON."
+                },
                 status=400,
             )
 
+        # ----------------------------------------------------
+        # TITLE
+        # ----------------------------------------------------
+
         if "title" in data:
-            title = data["title"].strip()
+            title = data[
+                "title"
+            ].strip()
 
             if not title:
                 return JsonResponse(
                     {
                         "error":
-                        "Title cannot be empty."
+                            "Title cannot be empty."
                     },
                     status=400,
                 )
 
             task.title = title
 
+        # ----------------------------------------------------
+        # DESCRIPTION
+        # ----------------------------------------------------
+
         if "description" in data:
             task.description = (
                 data["description"].strip()
             )
 
+        # ----------------------------------------------------
+        # DATE
+        # ----------------------------------------------------
+
         if "date" in data:
-             parsed_date = parse_date(
-        data["date"]
-    )
+            parsed_date = parse_date(
+                data["date"]
+            )
 
-        if not parsed_date:
-            return JsonResponse(
-            {
-                "error":
-                "Invalid date. Use YYYY-MM-DD."
-            },
-            status=400,
-        )
+            if not parsed_date:
+                return JsonResponse(
+                    {
+                        "error":
+                            "Invalid date. Use YYYY-MM-DD."
+                    },
+                    status=400,
+                )
 
-        task.date = parsed_date
+            task.date = parsed_date
+
+        # ----------------------------------------------------
+        # START TIME
+        # ----------------------------------------------------
 
         if "start_time" in data:
             task.start_time = (
-                data["start_time"] or None
+                data["start_time"]
+                or None
             )
 
+        # ----------------------------------------------------
+        # DURATION
+        # ----------------------------------------------------
+
         if "duration" in data:
-            task.duration = data["duration"]
+            task.duration = (
+                data["duration"]
+            )
+
+        # ----------------------------------------------------
+        # PRIORITY
+        # ----------------------------------------------------
 
         if "priority" in data:
+
             if data["priority"] not in [
                 "low",
                 "medium",
@@ -210,32 +315,51 @@ def task_detail(request, task_id):
                 return JsonResponse(
                     {
                         "error":
-                        "Invalid priority."
+                            "Invalid priority."
                     },
                     status=400,
                 )
 
-            task.priority = data["priority"]
+            task.priority = (
+                data["priority"]
+            )
+
+        # ----------------------------------------------------
+        # CATEGORY
+        # ----------------------------------------------------
 
         if "category" in data:
             task.category = (
                 data["category"].strip()
             )
 
+        # ----------------------------------------------------
+        # COMPLETED
+        # ----------------------------------------------------
+
         if "completed" in data:
             task.completed = bool(
                 data["completed"]
             )
+
+        # ----------------------------------------------------
+        # SAVE
+        # ----------------------------------------------------
 
         task.save()
 
         return JsonResponse({
             "message":
                 "Task updated successfully.",
-            "task": serialize_task(task),
+
+            "task":
+                serialize_task(task),
         })
 
+    # --------------------------------------------------------
     # DELETE /api/v1/planner/tasks/<id>/
+    # --------------------------------------------------------
+
     if request.method == "DELETE":
         task.delete()
 
@@ -245,6 +369,9 @@ def task_detail(request, task_id):
         })
 
     return JsonResponse(
-        {"error": "Method not allowed."},
+        {
+            "error":
+                "Method not allowed."
+        },
         status=405,
     )
